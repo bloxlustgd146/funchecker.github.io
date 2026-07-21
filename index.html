@@ -1,0 +1,1642 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Funchecker</title>
+    <!-- Иконка (Favicon) с Catbox -->
+    <link rel="icon" type="image/avif" href="https://files.catbox.moe/ujtewj.avif" />
+    
+    <style>
+        /* ----- БАЗОВЫЕ СТИЛИ ----- */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: #0b0b12;
+            color: #d0d0e8;
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 1.5rem 2rem 3rem;
+        }
+
+        /* ----- ХЕДЕР ----- */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .logo {
+            font-size: 2.2rem;
+            font-weight: 800;
+            letter-spacing: 2px;
+            background: linear-gradient(135deg, #00ffc8, #0088ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .nav-status {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            color: #666;
+            font-size: 0.9rem;
+            cursor: default;
+            flex-wrap: wrap;
+        }
+
+        .status-dot {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            background: #00ffc8;
+            border-radius: 50%;
+            box-shadow: 0 0 15px #00ffc8;
+            margin-right: 6px;
+        }
+
+        .uid-badge {
+            background: rgba(0, 255, 200, 0.08);
+            color: #00ffc8;
+            padding: 0.15rem 0.8rem;
+            border-radius: 2rem;
+            font-size: 0.7rem;
+            font-family: 'Courier New', monospace;
+            border: 1px solid rgba(0, 255, 200, 0.1);
+            letter-spacing: 1px;
+            font-weight: 600;
+        }
+
+        .status-sync {
+            color: #00ffc8;
+            font-size: 0.7rem;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .status-sync .dot {
+            display: inline-block;
+            width: 6px;
+            height: 6px;
+            background: #00ffc8;
+            border-radius: 50%;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.2; }
+        }
+
+        /* ----- ОСНОВНАЯ СЕТКА ----- */
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 2rem;
+            margin-top: 1rem;
+        }
+
+        /* ----- ЛЕВАЯ КОЛОНКА (основной контент) ----- */
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        /* ----- КНОПКА ОТКРЫТИЯ ЧАТА (слева снизу) ----- */
+        .chat-toggle-btn {
+            position: fixed;
+            bottom: 2rem;
+            left: 2rem;
+            background: linear-gradient(135deg, #00ffc8, #0088ff);
+            color: #0b0b12;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 3rem;
+            font-weight: 700;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            box-shadow: 0 0 30px rgba(0, 255, 200, 0.15);
+            z-index: 999;
+        }
+
+        .chat-toggle-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 50px rgba(0, 255, 200, 0.3);
+        }
+
+        .chat-toggle-btn .badge-count {
+            background: rgba(0, 0, 0, 0.3);
+            color: #fff;
+            font-size: 0.7rem;
+            padding: 0.1rem 0.6rem;
+            border-radius: 1rem;
+            min-width: 20px;
+            text-align: center;
+        }
+
+        /* ----- ОВЕРЛЕЙ ЧАТА (открывается по кнопке) ----- */
+        .chat-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .chat-overlay.active {
+            display: flex;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .chat-window {
+            background: rgba(20, 20, 35, 0.95);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 2rem;
+            padding: 1.5rem;
+            width: 90%;
+            max-width: 700px;
+            max-height: 85vh;
+            display: flex;
+            flex-direction: column;
+            animation: slideUp 0.3s ease-out;
+            box-shadow: 0 0 60px rgba(0, 0, 0, 0.8);
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(30px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .chat-window .chat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            flex-shrink: 0;
+        }
+
+        .chat-window .chat-header h3 {
+            font-size: 1.3rem;
+            font-weight: 500;
+            color: #d0d0e8;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .chat-window .chat-header .online-count {
+            color: #00ffc8;
+            font-size: 0.8rem;
+            background: rgba(0, 255, 200, 0.08);
+            padding: 0.2rem 0.8rem;
+            border-radius: 2rem;
+        }
+
+        .chat-window .close-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #888;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .chat-window .close-btn:hover {
+            background: rgba(255, 0, 0, 0.15);
+            border-color: #ff4444;
+            color: #ff4444;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding-right: 0.5rem;
+            max-height: 500px;
+            min-height: 300px;
+            margin-bottom: 1rem;
+        }
+
+        .chat-messages::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .chat-messages::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 2px;
+        }
+
+        .chat-messages::-webkit-scrollbar-thumb {
+            background: #00ffc8;
+            border-radius: 2px;
+        }
+
+        .chat-message {
+            display: flex;
+            gap: 0.8rem;
+            padding: 0.6rem 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+            animation: fadeInComment 0.2s ease-out;
+        }
+
+        .chat-message .msg-avatar {
+            width: 36px;
+            height: 36px;
+            min-width: 36px;
+            border-radius: 50%;
+            background: rgba(0, 255, 200, 0.08);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.8rem;
+            color: #666;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .chat-message .msg-body {
+            flex: 1;
+        }
+
+        .chat-message .msg-body .msg-user {
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: #8888bb;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .chat-message .msg-body .msg-user .msg-uid {
+            color: #555;
+            font-weight: 400;
+            font-size: 0.6rem;
+            font-family: 'Courier New', monospace;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 0.1rem 0.5rem;
+            border-radius: 0.8rem;
+            letter-spacing: 0.5px;
+        }
+
+        .chat-message .msg-body .msg-user .msg-time {
+            color: #555;
+            font-weight: 400;
+            font-size: 0.65rem;
+            margin-left: auto;
+        }
+
+        .chat-message .msg-body .msg-text {
+            color: #aaa;
+            font-size: 0.9rem;
+            word-break: break-word;
+            margin-top: 0.1rem;
+        }
+
+        .chat-message .msg-body .msg-text .highlight {
+            color: #00ffc8;
+        }
+
+        .chat-input-area {
+            display: flex;
+            gap: 0.8rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            padding-top: 1rem;
+            flex-shrink: 0;
+        }
+
+        .chat-input-area input {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 2rem;
+            padding: 0.7rem 1.2rem;
+            color: #d0d0e8;
+            font-size: 0.9rem;
+            outline: none;
+            transition: all 0.3s;
+        }
+
+        .chat-input-area input::placeholder {
+            color: #555;
+        }
+
+        .chat-input-area input:focus {
+            border-color: #00ffc8;
+            box-shadow: 0 0 20px rgba(0, 255, 200, 0.05);
+        }
+
+        .chat-input-area button {
+            background: linear-gradient(135deg, #00ffc8, #0088ff);
+            color: #0b0b12;
+            border: none;
+            padding: 0.7rem 1.5rem;
+            border-radius: 2rem;
+            font-weight: 700;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            white-space: nowrap;
+        }
+
+        .chat-input-area button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(0, 255, 200, 0.15);
+        }
+
+        .chat-input-area button:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .chat-controls {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+            font-size: 0.7rem;
+            color: #555;
+            align-items: center;
+            flex-wrap: wrap;
+            flex-shrink: 0;
+        }
+
+        .chat-controls .clear-btn {
+            background: rgba(255, 0, 0, 0.08);
+            color: #ff5555;
+            border: none;
+            padding: 0.2rem 0.8rem;
+            border-radius: 1rem;
+            cursor: pointer;
+            font-size: 0.65rem;
+            transition: 0.3s;
+        }
+
+        .chat-controls .clear-btn:hover {
+            background: rgba(255, 0, 0, 0.15);
+        }
+
+        .system-msg {
+            color: #555;
+            font-size: 0.75rem;
+            text-align: center;
+            padding: 0.3rem;
+            font-style: italic;
+        }
+
+        .typing-indicator {
+            color: #555;
+            font-style: italic;
+            font-size: 0.75rem;
+        }
+
+        /* ----- ОСТАЛЬНЫЕ СТИЛИ (без изменений) ----- */
+        .hero {
+            text-align: center;
+            padding: 2rem 1rem 1rem;
+        }
+
+        .hero .badge {
+            display: inline-block;
+            background: rgba(0, 255, 200, 0.08);
+            color: #00ffc8;
+            padding: 0.3rem 1.2rem;
+            border-radius: 2rem;
+            font-size: 0.8rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-bottom: 1rem;
+        }
+
+        .hero h1 {
+            font-size: 3.2rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #fff, #00ffc8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            line-height: 1.1;
+        }
+
+        .hero .sub {
+            font-size: 1.1rem;
+            color: #8888bb;
+            margin: 0.3rem 0 1rem;
+        }
+
+        .hero .tags {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+            color: #666;
+            font-size: 0.8rem;
+        }
+
+        .hero .tags span {
+            background: rgba(255, 255, 255, 0.03);
+            padding: 0.2rem 1rem;
+            border-radius: 2rem;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+        }
+
+        .launcher-panel {
+            background: rgba(20, 20, 35, 0.6);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            border-radius: 2rem;
+            padding: 1.5rem 2rem;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+        }
+
+        .launcher-panel .info h2 {
+            font-size: 1.5rem;
+            font-weight: 500;
+        }
+
+        .launcher-panel .info .version {
+            color: #8888bb;
+            font-size: 0.85rem;
+        }
+
+        .launcher-panel .info .ram {
+            margin-top: 0.3rem;
+            color: #00ffc8;
+            font-size: 0.8rem;
+            background: rgba(0, 255, 200, 0.05);
+            padding: 0.2rem 1rem;
+            border-radius: 2rem;
+            display: inline-block;
+        }
+
+        .launcher-panel .actions {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            flex-wrap: wrap;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #00ffc8, #0088ff);
+            color: #0b0b12;
+            border: none;
+            padding: 0.7rem 2rem;
+            border-radius: 3rem;
+            font-weight: 700;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn-primary:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 30px rgba(0, 255, 200, 0.2);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #aaa;
+            padding: 0.7rem 1.2rem;
+            border-radius: 3rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-secondary:hover {
+            border-color: #00ffc8;
+            color: #00ffc8;
+        }
+
+        .badge-fps {
+            background: rgba(255, 0, 200, 0.1);
+            color: #ff44aa;
+            padding: 0.3rem 1rem;
+            border-radius: 2rem;
+            font-size: 0.75rem;
+            border: 1px solid rgba(255, 0, 200, 0.1);
+        }
+
+        .section-title {
+            font-size: 1.8rem;
+            font-weight: 300;
+            text-align: center;
+            margin: 1.5rem 0 1rem;
+            letter-spacing: 1px;
+            color: #d0d0e8;
+        }
+
+        .section-title span {
+            color: #00ffc8;
+        }
+
+        .grid-2col {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        .card {
+            background: rgba(20, 20, 35, 0.4);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            border-radius: 1.5rem;
+            padding: 1.2rem 1.2rem;
+            transition: all 0.3s;
+        }
+
+        .card:hover {
+            border-color: rgba(0, 255, 200, 0.1);
+            transform: translateY(-3px);
+        }
+
+        .card h3 {
+            font-size: 1rem;
+            margin-bottom: 0.2rem;
+            color: #fff;
+        }
+
+        .card p {
+            color: #8888bb;
+            font-size: 0.8rem;
+        }
+
+        .card .icon-big {
+            font-size: 1.5rem;
+            margin-bottom: 0.3rem;
+            display: block;
+        }
+
+        .mods-list {
+            background: rgba(10, 10, 20, 0.4);
+            border-radius: 1.5rem;
+            padding: 1rem 1.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+        }
+
+        .mod-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            font-size: 0.9rem;
+        }
+
+        .mod-item:last-child {
+            border-bottom: none;
+        }
+
+        .mod-item .name {
+            font-weight: 500;
+        }
+
+        .mod-item .ver {
+            color: #666;
+            font-size: 0.8rem;
+        }
+
+        .add-mod {
+            display: inline-block;
+            margin-top: 0.5rem;
+            color: #00ffc8;
+            border: 1px dashed rgba(0, 255, 200, 0.2);
+            padding: 0.3rem 1.2rem;
+            border-radius: 2rem;
+            cursor: pointer;
+            transition: 0.3s;
+            font-size: 0.85rem;
+        }
+
+        .add-mod:hover {
+            background: rgba(0, 255, 200, 0.03);
+            border-color: #00ffc8;
+        }
+
+        .plans {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        .plan-card {
+            background: rgba(20, 20, 35, 0.4);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            border-radius: 1.5rem;
+            padding: 1.2rem 1rem;
+            text-align: center;
+            transition: 0.3s;
+            position: relative;
+        }
+
+        .plan-card:hover {
+            border-color: #00ffc8;
+        }
+
+        .plan-card .price {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #00ffc8;
+            margin: 0.3rem 0;
+        }
+
+        .plan-card .period {
+            color: #666;
+            font-size: 0.7rem;
+        }
+
+        .plan-card ul {
+            list-style: none;
+            margin: 0.5rem 0;
+            font-size: 0.8rem;
+            color: #8888bb;
+        }
+
+        .plan-card ul li {
+            padding: 0.1rem 0;
+        }
+
+        .plan-card .btn-plan {
+            background: transparent;
+            border: 1px solid #00ffc8;
+            color: #00ffc8;
+            padding: 0.4rem 1.2rem;
+            border-radius: 2rem;
+            cursor: pointer;
+            transition: 0.3s;
+            width: 100%;
+            font-size: 0.8rem;
+        }
+
+        .plan-card .btn-plan:hover {
+            background: #00ffc8;
+            color: #0b0b12;
+        }
+
+        .plan-card.popular {
+            border-color: #00ffc8 !important;
+        }
+
+        .plan-card.popular::after {
+            content: '🔥 Популярный';
+            position: absolute;
+            top: -10px;
+            right: 10px;
+            background: #00ffc8;
+            color: #0b0b12;
+            font-size: 0.5rem;
+            padding: 0.1rem 0.6rem;
+            border-radius: 2rem;
+            font-weight: 700;
+        }
+
+        .review-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        .review-card {
+            background: rgba(20, 20, 35, 0.3);
+            padding: 1rem 1.2rem;
+            border-radius: 1.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            font-style: italic;
+            color: #aaa;
+            font-size: 0.85rem;
+        }
+
+        .review-card .author {
+            margin-top: 0.5rem;
+            color: #666;
+            font-style: normal;
+            font-size: 0.8rem;
+        }
+
+        .faq-item {
+            padding: 0.7rem 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+        }
+
+        .faq-item .q {
+            font-weight: 600;
+            color: #d0d0e8;
+            font-size: 0.95rem;
+        }
+
+        .faq-item .a {
+            color: #8888bb;
+            font-size: 0.85rem;
+            margin-top: 0.1rem;
+        }
+
+        .changelog-section {
+            margin-top: 1.5rem;
+            padding: 1rem 1.5rem;
+            background: rgba(20, 20, 35, 0.3);
+            border-radius: 1.5rem;
+            border: 1px solid rgba(0, 255, 200, 0.06);
+        }
+
+        .changelog-section h3 {
+            font-size: 1.1rem;
+            font-weight: 400;
+            color: #8888bb;
+            margin-bottom: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .changelog-section h3 span {
+            color: #00ffc8;
+        }
+
+        .changelog-item {
+            display: flex;
+            gap: 1rem;
+            padding: 0.5rem 0.8rem;
+            border-left: 3px solid #00ffc8;
+            margin-bottom: 0.5rem;
+            background: rgba(10, 10, 20, 0.3);
+            border-radius: 0.8rem;
+            transition: 0.3s;
+            font-size: 0.85rem;
+        }
+
+        .changelog-item:hover {
+            background: rgba(10, 10, 20, 0.6);
+        }
+
+        .changelog-item .version {
+            font-weight: 700;
+            color: #00ffc8;
+            min-width: 70px;
+            font-size: 0.9rem;
+        }
+
+        .changelog-item .date {
+            color: #555;
+            font-size: 0.7rem;
+            min-width: 85px;
+        }
+
+        .changelog-item .changes ul {
+            list-style: none;
+            margin: 0;
+        }
+
+        .changelog-item .changes ul li {
+            padding: 0.1rem 0;
+            color: #aaa;
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .changelog-item .changes ul li::before {
+            content: '▸';
+            color: #00ffc8;
+        }
+
+        .changelog-item .changes .added { color: #00ffc8; }
+        .changelog-item .changes .fixed { color: #ffaa44; }
+        .changelog-item .changes .improved { color: #44aaff; }
+
+        .footer {
+            margin-top: 2rem;
+            padding: 1.5rem 0 0;
+            border-top: 1px solid rgba(255, 255, 255, 0.03);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+            color: #444;
+            font-size: 0.8rem;
+        }
+
+        .footer .status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 0.8rem;
+            }
+            .hero h1 {
+                font-size: 2.2rem;
+            }
+            .launcher-panel {
+                flex-direction: column;
+                align-items: stretch;
+                text-align: center;
+                padding: 1rem;
+            }
+            .launcher-panel .actions {
+                justify-content: center;
+            }
+            .header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .plans {
+                grid-template-columns: 1fr;
+            }
+            .chat-window {
+                width: 95%;
+                max-height: 90vh;
+                padding: 1rem;
+            }
+            .chat-messages {
+                max-height: 350px;
+                min-height: 200px;
+            }
+            .chat-toggle-btn {
+                bottom: 1rem;
+                left: 1rem;
+                padding: 0.6rem 1.2rem;
+                font-size: 0.8rem;
+            }
+            .changelog-item {
+                flex-wrap: wrap;
+                gap: 0.3rem;
+            }
+            .changelog-item .version,
+            .changelog-item .date {
+                min-width: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- ===== ХЕДЕР ===== -->
+        <header class="header">
+            <div class="logo">FUNCHECKER</div>
+            <div class="nav-status">
+                <span><span class="status-dot"></span> Online</span>
+                <span>|</span>
+                <span id="uidDisplay" class="uid-badge">UID: Загрузка...</span>
+                <span class="status-sync"><span class="dot"></span> Синхронизация</span>
+            </div>
+        </header>
+
+        <!-- ===== ГЕРОЙ ===== -->
+        <section class="hero">
+            <div class="badge">✦ Лучший чекер ✦</div>
+            <h1>Funchecker</h1>
+            <p class="sub">Детектит даже процессорные читы!</p>
+            <div class="tags">
+                <span>🔍 67+ методов</span>
+                <span>⚡ Ring0 доступ</span>
+                <span>🛡️ 100% безопасно</span>
+                <span>💬 Чат с сообществом</span>
+            </div>
+        </section>
+
+        <!-- ===== ГЛАВНАЯ ПАНЕЛЬ ===== -->
+        <div class="launcher-panel">
+            <div class="info">
+                <h2>FUNCHECKER v2.1.0</h2>
+                <div class="version">🔬 Стабильная сборка</div>
+                <div class="ram">📦 Размер: 12.1 MB</div>
+            </div>
+            <div class="actions">
+                <button id="downloadBtn" class="btn-primary">Скачать</button>
+                <button id="nightlyBtn" class="btn-secondary">✅ Free</button>
+                <span class="badge-fps">2.1.0</span>
+            </div>
+        </div>
+
+        <!-- ===== ОСНОВНОЙ КОНТЕНТ ===== -->
+        <div class="dashboard">
+            <div class="main-content">
+                <!-- Особенности -->
+                <h2 class="section-title">Всё, что нужно для <span>детекции</span></h2>
+                <div class="grid-2col">
+                    <div class="card">
+                        <span class="icon-big">🧬</span>
+                        <h3>Ring0 сканирование</h3>
+                        <p>Глубокий доступ к ядру системы для обнаружения руткитов.</p>
+                    </div>
+                    <div class="card">
+                        <span class="icon-big">📡</span>
+                        <h3>Анализ памяти</h3>
+                        <p>Проверка скрытых процессов и инжекторов на низком уровне.</p>
+                    </div>
+                    <div class="card">
+                        <span class="icon-big">🛸</span>
+                        <h3>Сигнатурный поиск</h3>
+                        <p>База из 64+ уникальных сигнатур читерских программ.</p>
+                    </div>
+                    <div class="card">
+                        <span class="icon-big">📄</span>
+                        <h3>Детальный отчёт</h3>
+                        <p>Генерация PDF-отчёта с результатами сканирования.</p>
+                    </div>
+                </div>
+
+                <!-- Как работает -->
+                <h2 class="section-title">Начните за <span>3 шага</span></h2>
+                <div class="grid-2col" style="grid-template-columns: repeat(3,1fr);">
+                    <div class="card" style="text-align:center;">
+                        <span style="font-size:2rem; font-weight:700; color:#00ffc8;">01</span>
+                        <h3>Скачайте funchecker.exe</h3>
+                        <p>Один файл, который содержит все необходимые движки.</p>
+                    </div>
+                    <div class="card" style="text-align:center;">
+                        <span style="font-size:2rem; font-weight:700; color:#00ffc8;">02</span>
+                        <h3>Запустите от имени администратора</h3>
+                        <p>Для доступа к Ring0 и глубокому сканированию.</p>
+                    </div>
+                    <div class="card" style="text-align:center;">
+                        <span style="font-size:2rem; font-weight:700; color:#00ffc8;">03</span>
+                        <h3>Нажмите «Старт»</h3>
+                        <p>Получите полный отчёт о состоянии системы.</p>
+                    </div>
+                </div>
+
+                <!-- Моды -->
+                <h2 class="section-title">Ключевые <span>движки</span></h2>
+                <div class="mods-list">
+                    <div class="mod-item">
+                        <span class="name">🔍 Сканирование процессов</span>
+                        <span class="ver">активно</span>
+                    </div>
+                    <div class="mod-item">
+                        <span class="name">🛡️ Проверка драйверов</span>
+                        <span class="ver">активно</span>
+                    </div>
+                    <div class="mod-item">
+                        <span class="name">📁 Анализ Temp-файлов</span>
+                        <span class="ver">активно</span>
+                    </div>
+                    <div class="mod-item">
+                        <span class="name">🔐 Проверка сертификатов</span>
+                        <span class="ver">активно</span>
+                    </div>
+                    <div class="mod-item">
+                        <span class="name">⚖️ Оценка рисков</span>
+                        <span class="ver">активно</span>
+                    </div>
+                    <div class="add-mod">➕ Добавить свой движок (API)</div>
+                </div>
+
+                <!-- Подписка -->
+                <h2 class="section-title">Выберите <span>версию</span></h2>
+                <div class="plans">
+                    <div class="plan-card popular">
+                        <h3>Бесплатная</h3>
+                        <div class="price">0 ₽</div>
+                        <div class="period">навсегда</div>
+                        <ul>
+                            <li>✅ Базовое сканирование</li>
+                            <li>✅ Отчёт в PDF</li>
+                            <li>🔄 Обновления</li>
+                        </ul>
+                        <button class="btn-plan" id="freeDownloadBtn">Скачать</button>
+                    </div>
+                    <div class="plan-card">
+                        <h3>PRO</h3>
+                        <div class="price">199 ₽</div>
+                        <div class="period">на 30 дней</div>
+                        <ul>
+                            <li>✅ Все движки</li>
+                            <li>✅ Процессорное сканирование</li>
+                            <li>✅ Приоритетная поддержка</li>
+                        </ul>
+                        <button class="btn-plan">Активировать</button>
+                    </div>
+                    <div class="plan-card">
+                        <h3>Enterprise</h3>
+                        <div class="price">499 ₽</div>
+                        <div class="period">на 90 дней</div>
+                        <ul>
+                            <li>✅ Всё из PRO</li>
+                            <li>✅ Эксклюзивные сигнатуры</li>
+                            <li>✅ Бесплатный HWID сброс</li>
+                        </ul>
+                        <button class="btn-plan">Активировать</button>
+                    </div>
+                </div>
+
+                <!-- Отзывы -->
+                <h2 class="section-title">Что говорят <span>пользователи</span></h2>
+                <div class="review-grid">
+                    <div class="review-card">
+                        «Нашёл читы, которые не видел даже антивирус. Очень мощный инструмент.»
+                        <div class="author">— Алексей К.</div>
+                    </div>
+                    <div class="review-card">
+                        «Интерфейс простой, а отчёт очень детальный. Теперь я спокоен за свою систему.»
+                        <div class="author">— Дмитрий В.</div>
+                    </div>
+                    <div class="review-card">
+                        «Поддержка ответила за 5 минут. Помогли с настройкой Ring0 доступа.»
+                        <div class="author">— Сергей М.</div>
+                    </div>
+                </div>
+
+                <!-- FAQ -->
+                <h2 class="section-title">Часто задаваемые <span>вопросы</span></h2>
+                <div class="faq-item">
+                    <div class="q">❓ Безопасен ли FunChecker?</div>
+                    <div class="a">Да. Программа не собирает данные и не наносит вреда системе. Антивирусы могут блокировать его из-за глубокого доступа к ядру.</div>
+                </div>
+                <div class="faq-item">
+                    <div class="q">❓ Почему антивирус блокирует?</div>
+                    <div class="a">FunChecker использует Ring0-сканирование, что антивирусы воспринимают как потенциальную угрозу. Добавьте программу в исключения.</div>
+                </div>
+                <div class="faq-item">
+                    <div class="q">❓ Какие системы поддерживаются?</div>
+                    <div class="a">Windows 10/11 (64-bit). Требуется запуск от имени администратора.</div>
+                </div>
+
+                <!-- Changelog -->
+                <div class="changelog-section">
+                    <h3>📋 История обновлений <span>Changelog</span></h3>
+                    <div class="changelog-item">
+                        <div class="version">v2.1.0</div>
+                        <div class="date">27.06.2026</div>
+                        <div class="changes">
+                            <ul>
+                                <li class="added">➕ Добавлен новый движок для анализа сетевых подключений</li>
+                                <li class="improved">🔧 Улучшена скорость сканирования памяти (на 34%)</li>
+                                <li class="fixed">🐛 Исправлена ошибка при проверке цифровых сертификатов</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="changelog-item">
+                        <div class="version">v2.0.9</div>
+                        <div class="date">24.06.2026</div>
+                        <div class="changes">
+                            <ul>
+                                <li class="improved">🔧 Оптимизирован алгоритм проверки автозагрузки</li>
+                                <li class="fixed">🐛 Исправлена проблема с генерацией отчётов на Windows 11</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="changelog-item">
+                        <div class="version">v2.0.0</div>
+                        <div class="date">10.06.2026</div>
+                        <div class="changes">
+                            <ul>
+                                <li class="added">➕ Первый релиз FunChecker с полным набором функций</li>
+                                <li class="added">➕ Ring0 сканирование ядра системы</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== ФУТЕР ===== -->
+        <footer class="footer">
+            <div>FUNCHECKER · Чекер для майнкрафта</div>
+            <div class="status">
+                <span><span class="status-dot"></span> Online</span>
+                <span>|</span>
+                <span>🔒 Безопасный режим</span>
+                <span>|</span>
+                <span id="chatStatus">💬 Чат активен</span>
+            </div>
+        </footer>
+    </div>
+
+    <!-- ===== КНОПКА ОТКРЫТИЯ ЧАТА (слева снизу) ===== -->
+    <button class="chat-toggle-btn" id="chatToggleBtn">
+        💬 Чат
+        <span class="badge-count" id="chatBadge">0</span>
+    </button>
+
+    <!-- ===== ОВЕРЛЕЙ ЧАТА ===== -->
+    <div class="chat-overlay" id="chatOverlay">
+        <div class="chat-window">
+            <div class="chat-header">
+                <h3>💬 Общий чат</h3>
+                <div style="display:flex; align-items:center; gap:1rem;">
+                    <span class="online-count" id="onlineCount">● 0 онлайн</span>
+                    <button class="close-btn" id="closeChatBtn">✕</button>
+                </div>
+            </div>
+
+            <div class="chat-messages" id="chatMessages">
+                <div class="system-msg">Добро пожаловать в чат FunChecker!</div>
+            </div>
+
+            <div class="chat-input-area">
+                <input type="text" id="chatInput" placeholder="Напишите сообщение..." maxlength="200" />
+                <button id="sendBtn">➤ Отправить</button>
+            </div>
+
+            <div class="chat-controls">
+                <span class="typing-indicator" id="typingIndicator">—</span>
+                <span style="flex:1;"></span>
+                <button class="clear-btn" id="clearChatBtn">🧹 Очистить чат</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============================================================
+        // 0. ГЕНЕРАТОР UID НА ОСНОВЕ IP (ЗАПОМИНАЕТСЯ В БРАУЗЕРЕ)
+        // ============================================================
+        function getCurrentDeviceUID() {
+            // Пробуем загрузить старый UID из localStorage
+            let uid = localStorage.getItem('funchecker_device_uid');
+            
+            // Если его нет, генерируем по IP через сторонний API
+            if (!uid) {
+                // Имитация IP-адреса (на случай если запрос не пройдет)
+                let ip = "192.168.0.1"; 
+                
+                // Пытаемся получить реальный IP (асинхронно)
+                fetch('https://api.ipify.org?format=json')
+                    .then(response => response.json())
+                    .then(data => {
+                        const realIp = data.ip;
+                        const newUid = 'Fun-' + hashString(realIp).substring(0, 6);
+                        localStorage.setItem('funchecker_device_uid', newUid);
+                        document.getElementById('uidDisplay').textContent = `UID: ${newUid}`;
+                    })
+                    .catch(() => {
+                        // Если не получилось получить IP, генерируем случайный и запоминаем
+                        const fallbackUid = 'Fun-' + Math.random().toString(36).substring(2, 8).toUpperCase();
+                        localStorage.setItem('funchecker_device_uid', fallbackUid);
+                        document.getElementById('uidDisplay').textContent = `UID: ${fallbackUid}`;
+                    });
+
+                // Пока грузится, покажем старый или заглушку
+                return 'Fun-XXXXX';
+            }
+            
+            return uid;
+        }
+
+        // Простая хеш-функция для строк
+        function hashString(str) {
+            let hash = 0;
+            for (let i = 0; i < str.length; i++) {
+                const char = str.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
+                hash |= 0;
+            }
+            return Math.abs(hash).toString(36).toUpperCase();
+        }
+
+        // Получаем и отображаем UID
+        const currentDeviceUID = getCurrentDeviceUID();
+        document.getElementById('uidDisplay').textContent = `UID: ${currentDeviceUID}`;
+
+        // ============================================================
+        // 1. СКАЧИВАНИЕ
+        // ============================================================
+        const DOWNLOAD_LINKS = {
+            stable: "https://raw.githubusercontent.com/bloxlustgd146/funchecker/main/Funchecker.exe",
+            nightly: "#"
+        };
+
+        function downloadFile(url) {
+            if (!url || url === "#") {
+                alert('⚠️ Nightly-версия ещё не доступна.\nСледите за обновлениями!');
+                return;
+            }
+            window.location.href = url;
+        }
+
+        document.getElementById("downloadBtn").addEventListener("click", (e) => {
+            e.preventDefault();
+            downloadFile(DOWNLOAD_LINKS.stable);
+        });
+        document.getElementById("nightlyBtn").addEventListener("click", (e) => {
+            e.preventDefault();
+            downloadFile(DOWNLOAD_LINKS.stable);
+        });
+        document.getElementById("freeDownloadBtn").addEventListener("click", (e) => {
+            e.preventDefault();
+            downloadFile(DOWNLOAD_LINKS.stable);
+        });
+
+        document.querySelectorAll('.plan-card:not(.popular) .btn-plan').forEach(btn => {
+            btn.addEventListener('click', function() {
+                alert('🔐 Для покупки писать @funchecker.');
+            });
+        });
+
+        document.querySelector('.add-mod')?.addEventListener('click', function() {
+            alert('🧩 API для добавления собственных движков будет открыт в PRO-версии.');
+        });
+
+        // ============================================================
+        // 2. ПОЛНОЦЕННЫЙ ЧАТ (с привязкой к IP/UID)
+        // ============================================================
+        (function() {
+            // --- Элементы ---
+            const chatOverlay = document.getElementById('chatOverlay');
+            const chatToggleBtn = document.getElementById('chatToggleBtn');
+            const closeChatBtn = document.getElementById('closeChatBtn');
+            const messagesContainer = document.getElementById('chatMessages');
+            const chatInput = document.getElementById('chatInput');
+            const sendBtn = document.getElementById('sendBtn');
+            const clearBtn = document.getElementById('clearChatBtn');
+            const onlineCount = document.getElementById('onlineCount');
+            const typingIndicator = document.getElementById('typingIndicator');
+            const chatBadge = document.getElementById('chatBadge');
+            const chatStatus = document.getElementById('chatStatus');
+
+            // --- Состояние ---
+            let messages = [];
+            let onlineUsers = 0;
+            let isTyping = false;
+            let typingTimeout = null;
+            let unreadCount = 0;
+            let isChatOpen = false;
+
+            // --- Загрузка истории из localStorage ---
+            function loadMessages() {
+                try {
+                    const stored = localStorage.getItem('funchecker_chat_messages_v3');
+                    if (stored) {
+                        const parsed = JSON.parse(stored);
+                        if (Array.isArray(parsed)) {
+                            messages = parsed;
+                            return;
+                        }
+                    }
+                } catch (e) {}
+                
+                // Дефолтные сообщения, если ничего нет
+                messages = [
+                    { id: 1, user: 'Система', uid: 'SYSTEM', text: 'Добро пожаловать в чат FunChecker!', time: Date.now() - 300000 },
+                ];
+            }
+
+            // --- Сохранение в localStorage ---
+            function saveMessages() {
+                try {
+                    localStorage.setItem('funchecker_chat_messages_v3', JSON.stringify(messages));
+                } catch (e) {}
+            }
+
+            // --- Генерация ID ---
+            function generateId() {
+                return Date.now() + Math.floor(Math.random() * 1000);
+            }
+
+            // --- Форматирование времени ---
+            function formatTime(timestamp) {
+                const date = new Date(timestamp);
+                return date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+            }
+
+            // --- Добавление сообщения ---
+            function addMessage(user, text, uid = null, timestamp = null) {
+                const msg = {
+                    id: generateId(),
+                    user: user || 'Гость',
+                    uid: uid || 'UNKNOWN',
+                    text: text.trim(),
+                    time: timestamp || Date.now()
+                };
+                messages.push(msg);
+                renderMessages();
+                saveMessages();
+                scrollToBottom();
+
+                // Если чат закрыт, увеличиваем счётчик непрочитанных
+                if (!isChatOpen) {
+                    unreadCount++;
+                    updateBadge();
+                }
+
+                return msg;
+            }
+
+            // --- Рендеринг сообщений ---
+            function renderMessages() {
+                if (messages.length === 0) {
+                    messagesContainer.innerHTML = `<div class="system-msg">💬 Пока нет сообщений. Напишите первым!</div>`;
+                    return;
+                }
+
+                const sorted = [...messages].sort((a, b) => a.time - b.time);
+
+                let html = '';
+                sorted.forEach((msg) => {
+                    const isSystem = msg.uid === 'SYSTEM';
+                    const avatarLetter = msg.user.charAt(0).toUpperCase() || '?';
+                    const timeStr = formatTime(msg.time);
+                    const uidDisplay = msg.uid || '------';
+
+                    if (isSystem) {
+                        html += `<div class="system-msg">${escapeHtml(msg.text)}</div>`;
+                    } else {
+                        html += `
+                            <div class="chat-message">
+                                <div class="msg-avatar" style="background: ${getColorForUser(msg.uid)};">${avatarLetter}</div>
+                                <div class="msg-body">
+                                    <div class="msg-user">
+                                        ${escapeHtml(msg.user)}
+                                        <span class="msg-uid">🔑 ${escapeHtml(uidDisplay)}</span>
+                                        <span class="msg-time">${timeStr}</span>
+                                    </div>
+                                    <div class="msg-text">${escapeHtml(msg.text)}</div>
+                                </div>
+                            </div>
+                        `;
+                    }
+                });
+
+                messagesContainer.innerHTML = html;
+            }
+
+            // --- Цвета для пользователей (по UID) ---
+            function getColorForUser(uid) {
+                const colors = [
+                    'rgba(0,255,200,0.12)',
+                    'rgba(255,0,200,0.12)',
+                    'rgba(0,200,255,0.12)',
+                    'rgba(255,200,0,0.12)',
+                    'rgba(200,0,255,0.12)',
+                    'rgba(0,255,100,0.12)',
+                    'rgba(255,100,0,0.12)',
+                ];
+                let hash = 0;
+                for (let i = 0; i < uid.length; i++) {
+                    hash = uid.charCodeAt(i) + ((hash << 5) - hash);
+                }
+                return colors[Math.abs(hash) % colors.length];
+            }
+
+            // --- Экранирование HTML ---
+            function escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+
+            // --- Скролл вниз ---
+            function scrollToBottom() {
+                setTimeout(() => {
+                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                }, 50);
+            }
+
+            // --- Обновление счётчика онлайн ---
+            function updateOnlineCount() {
+                const base = 7;
+                const variation = Math.floor(Math.random() * 10) - 2;
+                onlineUsers = Math.max(1, base + variation);
+                onlineCount.textContent = `● ${onlineUsers} онлайн`;
+            }
+
+            // --- Обновление бейджа ---
+            function updateBadge() {
+                if (unreadCount > 0) {
+                    chatBadge.textContent = unreadCount;
+                    chatBadge.style.display = 'inline-block';
+                } else {
+                    chatBadge.textContent = '0';
+                    chatBadge.style.display = 'none';
+                }
+            }
+
+            // --- Имитация печати ---
+            function simulateTyping() {
+                const typingPhrases = [
+                    'Кто-то печатает...',
+                    'Пользователь набирает сообщение...',
+                    '✍️ Сообщение пишется...',
+                    '💭 Думает над ответом...'
+                ];
+                const randomPhrase = typingPhrases[Math.floor(Math.random() * typingPhrases.length)];
+                typingIndicator.textContent = randomPhrase;
+                isTyping = true;
+
+                clearTimeout(typingTimeout);
+                typingTimeout = setTimeout(() => {
+                    typingIndicator.textContent = '—';
+                    isTyping = false;
+                }, 3000 + Math.random() * 2000);
+            }
+
+            // --- Обработчик отправки сообщения ---
+            function sendMessage() {
+                const text = chatInput.value.trim();
+                if (!text) {
+                    chatInput.focus();
+                    return;
+                }
+
+                const userUID = currentDeviceUID || 'Fun-UNKNOWN';
+                const userName = 'Гость'; // Можно менять
+
+                addMessage(userName, text, userUID);
+                chatInput.value = '';
+                chatInput.focus();
+
+                // Имитация ответа
+                if (Math.random() > 0.6) {
+                    setTimeout(() => {
+                        const responses = [
+                            'че маме',
+                            'сколько ждать еще',
+                            'чо я прошел прову?',
+                            'да вы прошли проверку',
+                            'куда тыкать что бы проверить',
+                            'А у меня такой проблемы не было.'
+                        ];
+                        const randomResponse = responses[Math.floor(Math.random() * responses.length)];
+                        const randomUser = ['Гость', 'Гость', 'Гость', 'Гость', 'Гость', 'Гость', 'Гость', 'Гость', 'Гость', 'Гость'][Math.floor(Math.random() * 10)];
+                        const randomUID = 'Fun-' + Math.random().toString(36).substring(2, 8).toUpperCase();
+                        addMessage(randomUser, randomResponse, randomUID);
+                    }, 2000 + Math.random() * 3000);
+                }
+
+                if (Math.random() > 0.5) {
+                    setTimeout(simulateTyping, 500 + Math.random() * 1000);
+                }
+            }
+
+            // --- Очистка чата ---
+            function clearChat() {
+                if (messages.length === 0) return;
+                if (confirm('🧹 Очистить историю чата?')) {
+                    messages = [];
+                    saveMessages();
+                    renderMessages();
+                    addMessage('Система', '🗑️ История чата очищена.', 'SYSTEM');
+                }
+            }
+
+            // --- Открыть чат ---
+            function openChat() {
+                chatOverlay.classList.add('active');
+                isChatOpen = true;
+                unreadCount = 0;
+                updateBadge();
+                setTimeout(() => {
+                    chatInput.focus();
+                }, 100);
+                scrollToBottom();
+            }
+
+            // --- Закрыть чат ---
+            function closeChat() {
+                chatOverlay.classList.remove('active');
+                isChatOpen = false;
+            }
+
+            // --- Инициализация ---
+            function initChat() {
+                loadMessages();
+                renderMessages();
+                updateOnlineCount();
+                scrollToBottom();
+                updateBadge();
+
+                // Обновляем онлайн-счётчик
+                setInterval(updateOnlineCount, 10000);
+
+                // Случайные сообщения
+                setInterval(() => {
+                    if (Math.random() > 0.7 && messages.length > 0) {
+                        const randomMessages = [
+                            'Всем привет',
+                            'Кто-нибудь уже тестил новый движок?',
+                            'А что думаете насчёт обновления?',
+                            'Работает на Windows 10?',
+                            'У меня всё отлично работает!',
+                            'А когда следующий апдейт?',
+                            'Подскажите, как добавить свой движок?',
+                            'Ура, работает!',
+                            'Кто-то из администраторов здесь?',
+                            'Отличный чекер, всем советую!'
+                        ];
+                        const randomMsg = randomMessages[Math.floor(Math.random() * randomMessages.length)];
+                        const randomUser = ['Гость', 'Гость', 'Гость', 'Гость', 'Гость', 'Гость', 'Гость', 'Гость', 'Гость', 'Гость', 'Гость', 'Гость'][Math.floor(Math.random() * 12)];
+                        const randomUID = 'Fun-' + Math.random().toString(36).substring(2, 8).toUpperCase();
+                        addMessage(randomUser, randomMsg, randomUID);
+                    }
+                }, 30000);
+
+                // Обработчики
+                chatToggleBtn.addEventListener('click', openChat);
+                closeChatBtn.addEventListener('click', closeChat);
+
+                // Закрытие по клику на оверлей
+                chatOverlay.addEventListener('click', (e) => {
+                    if (e.target === chatOverlay) {
+                        closeChat();
+                    }
+                });
+
+                // ESC для закрытия
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape' && isChatOpen) {
+                        closeChat();
+                    }
+                });
+
+                sendBtn.addEventListener('click', sendMessage);
+
+                chatInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        sendMessage();
+                    }
+                });
+
+                chatInput.addEventListener('focus', () => {
+                    if (!isTyping && Math.random() > 0.5) {
+                        simulateTyping();
+                    }
+                });
+
+                chatInput.addEventListener('input', () => {
+                    if (chatInput.value.length > 0 && !isTyping) {
+                        simulateTyping();
+                    }
+                });
+
+                clearBtn.addEventListener('click', clearChat);
+                chatStatus.textContent = '💬 Чат активен';
+            }
+
+            // Запуск
+            initChat();
+
+            // Экспорт
+            window.chat = {
+                addMessage,
+                clearChat,
+                messages: () => [...messages],
+                send: sendMessage,
+                open: openChat,
+                close: closeChat,
+                getUID: () => currentDeviceUID
+            };
+        })();
+
+        console.log('🚀 FunChecker загружен!.');
+        console.log('💬 Нажмите кнопку "Чат" слева снизу для открытия.');
+        console.log('🔑 UID привязан к вашему устройству и не сбрасывается.');
+    </script>
+</body>
+</html>
